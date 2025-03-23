@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Navigation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map { height: 650px; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <h2>University Navigation System</h2>
+
+    <label for="start">Start Location:</label>
+    <select id="start"></select>
+
+    <label for="end">End Location:</label>
+    <select id="end"></select>
+
+    <button onclick="getDirections()">Get Directions</button>
+
+    <h3>Directions:</h3>
+    <p id="directions">Select locations and click "Get Directions" to view step-by-step instructions.</p>
+
+    <div id="map"></div>
+
+    <script>
+        let map = L.map('map').setView([17.550105, 78.166080], 15); // Default center
+
+        // Add Thunderforest Basemap
+        L.tileLayer('https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=57e500d5b1ae45b1911abb1e2990edc7', {
+            attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a> contributors'
+        }).addTo(map);
+
+        let locations = {};
+        let markers = [];
+
+        // Fetch Locations from Backend
+        fetch('/locations')
+        .then(response => response.json())
+        .then(data => {
+            let startSelect = document.getElementById("start");
+            let endSelect = document.getElementById("end");
+
+            data.forEach(location => {
+                locations[location.id] = [location.latitude, location.longitude];
+
+                let option1 = new Option(location.name, location.id);
+                let option2 = new Option(location.name, location.id);
+
+                startSelect.add(option1);
+                endSelect.add(option2);
+
+                // Create marker and display name on hover
+                let marker = L.marker([location.latitude, location.longitude])
+                    .addTo(map)
+                    .bindTooltip(`<b>${location.name}</b>`, { permanent: false, direction: "top" });
+
+                markers.push(marker);
+            });
+        });
+
+        function getDirections() {
+            let start = document.getElementById("start").value;
+            let end = document.getElementById("end").value;
+
+            if (start === end) {
+                alert("Start and end locations must be different!");
+                return;
+            }
+
+            fetch(`/directions?start=${start}&end=${end}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("directions").innerText = data.directions || "No directions found.";
+            });
+        }
+    </script>
+
+</body>
+</html>
